@@ -663,43 +663,42 @@ lst.pop_back();
     template<typename T>
     struct less{
       bool operator()(const T& left, const T& right)
-  		{
-  			return left < right;
-  		}
+      {
+          return left < right;
+      }
     };
     
     template<typename T>
     struct greater{
-      bool operator()(const T& left, const T& right)
-  		{
-  			return left > right;
-  		}
+      bool operator()(const T& left, const T& right) {
+          return left > right;
+      }
     };
     
     template<typename T, typename Container = vector<T>, typename Comp = less<T>>
     class Priority_queue{
     public:
     	void push(const T& x) {
-        c.push_back(x);
-        AdjustUp(c.size()-1);
+      	c.push_back(x);
+       	AdjustUp(c.size()-1);
       }
       
       void pop(){
-        swap(c[0], c[c.size()-1]);
-        c.pop_back();
-        AdjustDown(0);
+         	swap(c[0], c[c.size()-1]);
+        	c.pop_back();
+        	AdjustDown(0);
       }
       
       T& top() {
-        return c[0];
+        	return c[0];
       }
       
       size_t size() {
-        return c.size();
+        	return c.size();
       }
       
       bool empty() {
-        return c.empty();
+        	return c.empty();
       }
       
     private:
@@ -717,25 +716,24 @@ lst.pop_back();
       }
       
       void AdjustDown(int cur) {
-        int child = 2*cur + 1;
-  			Comp cmp;
-  			while (child < c.size())
-  			{
-  				if (child+1 < c.size() && cmp(c[child], c[child+1])) {
-  					++child;
-  				}
-  				if (cmp(c[cur], c[child])) {
-  					swap(c[child], c[cur]);
-  					cur = child;
-  					child = 2*cur + 1;
-  				}
-  				else break;
-  			}
+        	int child = 2*cur + 1;
+          Comp cmp;
+          while (child < c.size()) {
+              if (child+1 < c.size() && cmp(c[child], c[child+1])) {
+                  ++child;
+              }
+              if (cmp(c[cur], c[child])) {
+                  swap(c[child], c[cur]);
+                  cur = child;
+                  child = 2*cur + 1;
+              }
+              else break;
+          }
       }
     };
   }
   ```
-
+  
   
 
 - priority_queue 基本API
