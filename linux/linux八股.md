@@ -110,7 +110,7 @@
 
   - （无名或匿名）管道，Unix最古老IPC
 
-    > **半双工**，数据智能一个方向流动，具有固定的读端和写端；
+    > **半双工**，数据只能一个方向流动，具有固定的读端和写端；
     >
     > 只能使用在具有亲缘关系的进程之间通信（父子或兄弟）；
     >
@@ -223,7 +223,7 @@
 - select 工作原理
 
   > - 能够监听的文件描述符个数受限于FD_SETSIZE（一般为1024）；为什么？
-  >   - 写死在内核中了，要是修改就是需要重新编译内核……^ _ ^
+  >   - 写死在内核中了，要是修改就是需要重新编译内核……
   > - 单纯改变进程打开的文件描述符个数并不能改变select监听的文件个数
   > - select采用轮询模型，容易降低服务器响应效率
   > - `int select(int ndfs, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, struct time_val);` 函数原型
@@ -246,17 +246,17 @@
   >     short events; // 监听的事件
   >     short revent; // 监听事件中满足条件返回的事件
   >   };
-  >                   
+  >                             
   >   // 提供了一些宏值
   >   /*
   >   POLLIN
   >   POLLOUT
   >   POLLERR
   >   */
-  >                   
+  >                             
   >   // 用户准备一个pollfd结构体数组，里面存放需要监听的fd
   >   struct pollfd client[OPEN_MAX]; // OPEN_MAX 用户自己指定，因此可以突破1024上限
-  >                   
+  >                             
   >   // 使用
   >   if (client[0].revents & POLLRDNORM) {
   >     ......;
@@ -327,9 +327,9 @@
       >
       > void*ptr
     
-  
   - epoll底层原理：红黑树，就绪队列，等待队列？
-  - epoll事件驱动：reactor。。。
+  
+  - epoll事件驱动：**reactor**
   
   
   
@@ -395,18 +395,18 @@
   >
   > ```c
   > int TestAndSet(int *old_ptr, int new) {
-  > int old = *old_ptr;
-  > *old_ptr = new;
-  > return old;
+  > 	int old = *old_ptr;
+  > 	*old_ptr = new;
+  > 	return old;
   > }
   > 
   > // 原理
   > typedef struct lock_t {
-  > int flag;
+  > 	int flag;
   > }lock_t;
   > void lock(lock_t *lock) {
   > while(TestAndSet(lock->flag, 1) == 1)
-  >  ; //spin 自旋
+  > 	; //spin 自旋
   > }
   > ```
   >
@@ -428,16 +428,16 @@
   >
   > ```c
   > int CompareAndSwap(int *ptr, int expect, int new) {
-  >   int actual = *ptr;
-  >   if (actual == expect) {
-  >     *ptr = new;
-  >   }
-  >   return actual;
+  >   	int actual = *ptr;
+  >   	if (actual == expect) {
+  >     	*ptr = new;
+  >   	}
+  >   	return actual;
   > }
   > 
   > void lock(lock_t *lock) {
-  >   while(CompareAndSet(&lock->flag, 0, 1) == 1)
-  >     ; //spin
+  >   	while(CompareAndSet(&lock->flag, 0, 1) == 1)
+  >     	; //spin
   > }
   > ```
   >
@@ -445,7 +445,7 @@
   >
   > 基于**无等待同步**避免互斥：
   >
-  > 使用CAS，实现一些不用加锁来保证同步问题：
+  > 使用CAS，实现一些不用加锁来保证同步问题：**无锁队列**
   >
   > 见**OS P286**
   >
@@ -457,30 +457,30 @@
   >
   > ```c
   > typedef struct lock_t{
-  >   int ticket;
-  >   int turn;
+  >   	int ticket;
+  >   	int turn;
   > }lock_t;
   > 
   > void lock_init(lock_t *lock) {
-  >   lock->ticket = 0;
-  >   lock->turn = 0;
+  >   	lock->ticket = 0;
+  >   	lock->turn = 0;
   > }
   > 
   > // 理解为每次取得自己的序号，并设置下一个线程的序号
   > int FetchAndAdd(int *ptr) {
-  >   int old = *ptr;
-  >   *ptr = old+1;
-  >   return old;
+  >   	int old = *ptr;
+  >   	*ptr = old+1;
+  >   	return old;
   > }
   > 
   > void lock(lock_t *lock) {
-  >   int myturn = FetchAndAdd(&lock->ticket);
-  >   while(lock->turn != myturn)
-  >     ; //spin
+  >   	int myturn = FetchAndAdd(&lock->ticket);
+  >   	while(lock->turn != myturn)
+  >     	; //spin
   > }
   > 
   > void unlock(lock_t *lock) {
-  >   FetchAndAdd(&lock->turn);
+  >   	FetchAndAdd(&lock->turn);
   > }
   > ```
   >
@@ -562,7 +562,61 @@
 
 
 
+# linux下高并发优化
 
+- **问题描述**
+
+  `socket() failed (Too many open files)`
+
+  > 程序打开的文件socket连接数量超过了系统的设定值；
+  >
+  > `ulimit -a`			查看每个用户最大允许打开的文件数量
+  >
+  > 默认都是1024：
+  >
+  > `vim /etc/security/limits.conf`		 文件内部修改重启可以生效
+
+- **Linux高并发场景下time_wait过多的问题分析及解决**
+
+  > 
+
+- **使用合适的网络IO技术和I/O事件分派机制**
+
+  [参考](https://cloud.tencent.com/developer/article/1684951)
+  
+  > **五种IO模型**
+  >
+  > - （同步）阻塞IO——BIO
+  > - （同步）非阻塞IO（忙轮询）——NIO
+  > - （同步）多路IO复用     **Reactor模式**
+  > - （同步）信号驱动IO——AIO
+  > - 异步IO    **Proactor模式**
+  >
+  > **信号驱动IO和异步IO的区别**：
+  >
+  > 信号驱动IO：
+  >
+  > 进程发起一个IO，会向内核注册回调函数——信号处理程序，然后进程返回（不阻塞），在内核数据就绪时就会发送一个信号给进程，进程便在信号处理程序调用IO读取数据：先将数据拷贝到用户区，在处理数据；
+  >
+  > 异步IO：**Proactor模式**
+  >
+  > 进程发起一个IO操作，进程返回（不阻塞）；内核把整个IO处理完成后，会通知进程结果。如果IO操作成功则进程直接获取到数据。
+
+
+
+# linux系统调用
+
+
+
+
+
+# 文件系统inode
+
+
+
+
+
+# 进程和线程
 
 
 

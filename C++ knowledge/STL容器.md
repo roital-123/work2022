@@ -292,6 +292,30 @@
   */
   ```
 
+- **vector扩容策略？**
+
+  > - **每次capacity+1：**
+  >
+  >   当有k个元素时，此时扩容重新分配内存需要的时间是**O(k)**；
+  >
+  >   综合：添加完n个元素：$O(1+2+3+...+n-1) = O(n^2)$
+  >
+  > - **每次capacity+c：其中c大于1（即固定长度增长）**
+  >
+  >   设：$n = k*c + 1$
+  >
+  >   综合添加完n个元素：$O(c + 2*c + 3*c + ... + k*c) = O(n^2)$
+  >
+  >   **以上两种固定增长，n次push_back的均摊时间复杂度是O(n)**
+  >
+  > - **倍数增长**
+  >
+  >   不同编译器的扩容方式不同，VS2015已1.5倍增长，GCC已2倍增长；
+  >   $$
+  >   \sum_{i=1}^{log_mn} m^i = (m-1)n/m
+  >   $$
+  >   总时间复杂度是O(n)，均摊时间复杂度为O(1)
+
 
 
 # list底层原理
@@ -322,7 +346,7 @@ lst.pop_back();
 > - deque容器存储数据的空间是分段的，段之间不一定是连续的，但是段内部内存空间是连续的；
 > - 为了管理这个不连续的段，deque容器使用vector容器-- **map** --存储各个连续空间的首地址。map中存储的都是指针 `T*`；
 > - 因为这种设计，deque的迭代器是比较特殊的：
->   - 能够定为具体数据  `T* cur`
+>   - 能够定位具体数据  `T* cur`
 >   - 能够定位到当前数据位于那个段内 `T** node ` （二级指针）
 >   - 能够定位当前段的开始和结束位置 `T* first; T* last`
 > - 因此，deque容器需要维护一个容器**map**；**start**和**finish**两个迭代器，在`push_front()` 和 `push_back()` 时起作用。
@@ -771,9 +795,9 @@ lst.pop_back();
 size_t strlen(const char *str)
 {
 	assert(str != NULL);
-  size_t len=0;
-  while((*str++) != '\0') len++; // 解引用和后置自增的优先级
-  return len;
+  	size_t len=0;
+  	while((*str++) != '\0') len++; // 解引用和后置自增的优先级
+  	return len;
 }
 
 // strcpy
@@ -835,28 +859,57 @@ void * mymemcpy(void *dest, const void *src, size_t n)
   	int* destP = (int*) dest;
   
   	if (destCh > srcCh && srcCh+n > destCh) {
-      for (int i=cntChar-1; i>=0; i--) {
-        destCh[i]=srcCh[i];
-      }
-      
-      for(int i=cntChar; i>=0; i--) {
-        destP[i]=srcP[i];
-      }
+        for(int i=n-1; i>=n-cntChar; --i) {
+            destCh[i] = srcCh[i];
+        }
+        
+        for(int i=cntInt-1; i>=0; --i) {
+            destP[i] = secP[i];
+        }
     }
   	else {
-      while (cntCh--) {
-        *destCh++ = *srcCh++;
-      }
+      	while (cntCh--) {
+        	*destCh++ = *srcCh++;
+      	}
       
-      srcP = (int*)srcCh;
-      destP = (int*)destCh;
-      while(cntInt--) {
-       	*destP++ = *srcP++;
-      }
+      	srcP = (int*)srcCh;
+      	destP = (int*)destCh;
+      	while(cntInt--) {
+       		*destP++ = *srcP++;
+      	}
     }
     return dest;
 }
 ```
+
+- **string函数处理**
+
+  > - **char—>string**
+  >
+  >   ​	**定义空字符串，将单个字符添加到结尾：**
+  >
+  >   `char ch = 'a';`
+  >
+  >   `string s = "";`
+  >
+  >   `s.append(1, a)`
+  >
+  >   ​	**使用stringstream（#include<sstream>）**
+  >
+  >   `stringstream stream;`
+  >
+  >   `stream<<ch;`
+  >
+  >   `string s = stream.str();`
+  >
+  >   ​	**string构造函数**
+  >
+  >   `string s(1,ch);`
+  >
+  > - **int、double—>string**
+  >
+  >   ​	**to_string(...)API**
+  >
 
 
 
